@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Заявки - Транспортна біржа</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: auto; }
+        .customer-only { display: none; }
+        input, button { margin-bottom: 10px; padding: 8px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+    </style>
+</head>
+<body>
+<button onclick="logout()" style="float: right;">Вийти</button>
+<h2>Модуль Заявок</h2>
+
+<div id="createOrderSection" class="customer-only" style="background: #f9f9f9; padding: 15px; margin-bottom: 20px;">
+    <h3>Створити заявку</h3>
+    <form id="orderForm">
+        <input type="text" id="type" placeholder="Тип вантажу" required>
+        <input type="number" id="weight" placeholder="Вага (тонни)" required>
+        <input type="text" id="origin" placeholder="Звідки (Адреса)" required>
+        <input type="text" id="dest" placeholder="Куди (Адреса)" required>
+        <input type="date" id="date" required>
+        <input type="number" id="price" placeholder="Бажана ціна (необов'язково)">
+        <button type="submit">Опублікувати</button>
+    </form>
+</div>
+
+<h3>Активні заявки</h3>
+<table>
+    <thead>
+    <tr>
+        <th>Вантаж</th>
+        <th>Маршрут</th>
+        <th>Дата</th>
+        <th>Вага</th>
+        <th>Дія</th>
+    </tr>
+    </thead>
+    <tbody id="ordersTable"></tbody>
+</table>
+
+<script>
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('userRole');
+
+    if (!token) window.location.href = '/login.html';
+
+    // Показуємо форму створення, якщо роль customer
+    if (role === 'customer') {
+        document.getElementById('createOrderSection').style.display = 'block';
+    }
+
+    // Завантаження заявок
+    async function loadOrders() {
+        const res = await fetch('/api/orders', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const orders = await res.json();
+
+        const tbody = document.getElementById('ordersTable');
+        tbody.innerHTML = '';
+
+        orders.forEach(o => {
+            tbody.innerHTML += `
+                    <tr>
+                        <td>${o.cargo_type}</td>
+                        <td>${o.origin_address} ➔ ${o.destination_address}</td>
+                        <td>${o.desired_date.split('T')[0]}</td>
+                        <td>${o.cargo_weight} т.</td>
+                        <td><button onclick="viewDetails('${o.id}')">Деталі</button></td>
+                    </tr>
+                `;
+        });
+    }
+
+    // Створення заявки
+    document.getElementById('orderForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = {
+            cargo_type: document.getElementById('type').value,
+            cargo_weight: document.getElementById('weight').value,
+            origin_address: document.getElementById('origin').value,
+            destination_address: document.getElementById('dest').value,
+            desired_date: document.getElementById('date').value,
+            desired_price: document.getElementById('price').value || null
+        };
+
+        await fetch('/api/orders', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(data)
+        });
+
+        e.target.reset();
+        loadOrders(); // Оновлюємо таблицю
+    });
+
+    function viewDetails(id) {
+        alert('Тут має бути перехід на сторінку деталей або модальне вікно для заявки: ' + id);
+        // У майбутньому: window.location.href = `/order-details.html?id=${id}`;
+    }
+
+    function logout() {
+        localStorage.clear();
+        window.location.href = '/login.html';
+    }
+
+    // Ініціалізація
+    loadOrders();
+</script>
+</body>
+</html>
