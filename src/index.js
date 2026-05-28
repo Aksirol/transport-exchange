@@ -4,6 +4,7 @@ const path = require('path');
 const pool = require('./db');
 const authRoutes = require('./routes/authRoutes');
 const orderRoutes = require('./routes/orderRoutes');
+const proposalRoutes = require('./routes/proposalRoutes');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -16,6 +17,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 // Підключення маршрутів автентифікації
 app.use('/api/auth', authRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/proposals', proposalRoutes);
 
 // Тестовий маршрут
 app.get('/api/health', async (req, res) => {

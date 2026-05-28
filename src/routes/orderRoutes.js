@@ -3,6 +3,7 @@ const router = express.Router();
 const orderController = require('../controllers/orderController');
 const { verifyToken } = require('../middleware/authMiddleware');
 const { checkRole } = require('../middleware/roleMiddleware');
+const proposalController = require('../controllers/proposalController');
 
 // Всі маршрути заявок вимагають авторизації
 router.use(verifyToken);
@@ -16,5 +17,7 @@ router.post('/', checkRole(['customer']), orderController.createOrder);
 router.get('/my/list', checkRole(['customer']), orderController.getMyOrders); // Змінено шлях для уникнення конфлікту з :id
 router.put('/:id', checkRole(['customer']), orderController.updateOrder);
 router.delete('/:id', checkRole(['customer']), orderController.cancelOrder);
+
+router.get('/:id/proposals', checkRole(['customer']), proposalController.getOrderProposals);
 
 module.exports = router;

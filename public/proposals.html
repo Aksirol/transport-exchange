@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Пропозиції - Транспортна біржа</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: auto; }
+        .hidden { display: none; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+        .btn-accept { background-color: #28a745; color: white; padding: 5px 10px; border: none; cursor: pointer; }
+        .btn-reject { background-color: #dc3545; color: white; padding: 5px 10px; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+<nav>
+    <a href="/orders.html">⬅ Назад до заявок</a>
+</nav>
+<h2 id="pageTitle">Мої пропозиції</h2>
+
+<div id="customerSection" class="hidden">
+    <input type="text" id="orderIdInput" placeholder="Введіть ID вашої заявки">
+    <button onclick="loadOrderProposals()">Показати відгуки</button>
+</div>
+
+<table>
+    <thead>
+    <tr id="tableHeaders">
+    </tr>
+    </thead>
+    <tbody id="proposalsTable"></tbody>
+</table>
+
+<script>
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('userRole');
+
+    if (!token) window.location.href = '/login.html';
+
+    if (role === 'customer') {
+        document.getElementById('pageTitle').innerText = 'Перегляд відгуків до заявки';
+        document.getElementById('customerSection').classList.remove('hidden');
+        document.getElementById('tableHeaders').innerHTML = `<th>Перевізник</th><th>Ціна</th><th>Коментар</th><th>Статус</th><th>Дії</th>`;
+    } else if (role === 'carrier') {
+        document.getElementById('tableHeaders').innerHTML = `<th>Маршрут</th><th>Вантаж</th><th>Моя ціна</th><th>Статус</th>`;
+        loadMyProposals();
+    }
+
+    // Для Перевізника
+    async function loadMyProposals() {
+        const res = await fetch('/api/proposals/my', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        renderTableCarrier(data);
+    }
+
+    // Для Замовника
+    async function loadOrderProposals() {
+        const orderId = document.getElementById('orderIdInput').value;
+        if (!orderId) return alert('Введіть ID заявки');
+
+        const res = await fetch(`/api/orders/${orderId}/proposals`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            return alert(err.message);
+        }
+
+        const data = await res.json();
+        renderTableCustomer(data);
+    }
+
+    function renderTableCarrier(proposals) {
+        const tbody = document.getElementById('proposalsTable');
+        tbody.innerHTML = proposals.map(p => `
+                <tr>
+                    <td>${p.origin_address} ➔ ${p.destination_address}</td>
+                    <td>${p.cargo_type}</td>
+                    <td>${p.price} ₴</td>
+                    <td><strong>${p.status}</strong></td>
+                </tr>
+            `).join('');
+    }
+
+    function renderTableCustomer(proposals) {
+        const tbody = document.getElementById('proposalsTable');
+        tbody.innerHTML = proposals.map(p => `
+                <tr>
+                    <td>${p.carrier_name} (${p.carrier_phone || 'не вказано'})</td>
+                    <td>${p.price} ₴</td>
+                    <td>${p.comment || ''}</td>
+                    <td><strong>${p.status}</strong></td>
+                    <td>
+                        ${p.status === 'pending' ? `
+                            <button class="btn-accept" onclick="handleAction('${p.id}', 'accept')">Прийняти</button>
+                            <button class="btn-reject" onclick="handleAction('${p.id}', 'reject')">Відхилити</button>
+                        ` : '-'}
+                    </td>
+                </tr>
+            `).join('');
+    }
+
+    async function handleAction(proposalId, action) {
+        if (!confirm(`Ви впевнені, що хочете ${action === 'accept' ? 'прийняти' : 'відхилити'} цю пропозицію?`)) return;
+
+        const res = await fetch(`/api/proposals/${proposalId}/${action}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const result = await res.json();
+        alert(result.message);
+        loadOrderProposals(); // Оновлюємо таблицю
+    }
+</script>
+</body>
+</html>
