@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Мій автопарк - Транспортна біржа</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: auto; }
+        input, select, button { margin-bottom: 10px; padding: 8px; width: 100%; box-sizing: border-box; }
+        .form-container { background: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+        .btn-delete { background-color: #dc3545; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+<nav>
+    <a href="/proposals.html">⬅ До моїх пропозицій</a> |
+    <a href="/orders.html">Пошук вантажів</a>
+</nav>
+<h2>Мій автопарк</h2>
+
+<div class="form-container">
+    <h3>Додати транспортний засіб</h3>
+    <form id="vehicleForm">
+        <input type="text" id="brand" placeholder="Марка (напр., Volvo)" required>
+        <input type="text" id="model" placeholder="Модель (напр., FH16)" required>
+        <select id="type" required>
+            <option value="" disabled selected>Оберіть тип кузова</option>
+            <option value="Тент">Тент</option>
+            <option value="Рефрижератор">Рефрижератор</option>
+            <option value="Цистерна">Цистерна</option>
+            <option value="Відкрита платформа">Відкрита платформа</option>
+        </select>
+        <input type="number" step="0.1" id="payload" placeholder="Вантажопідйомність (тонни)" required>
+        <input type="text" id="license" placeholder="Номерний знак (напр., BC1234AB)" required>
+        <button type="submit" style="background-color: #28a745; color: white; border: none;">Додати в автопарк</button>
+    </form>
+</div>
+
+<h3>Мої автомобілі</h3>
+<table>
+    <thead>
+    <tr>
+        <th>Марка та Модель</th>
+        <th>Тип</th>
+        <th>Тоннаж</th>
+        <th>Номерний знак</th>
+        <th>Дії</th>
+    </tr>
+    </thead>
+    <tbody id="vehiclesTable"></tbody>
+</table>
+
+<script>
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('userRole');
+
+    if (!token || role !== 'carrier') {
+        alert('Ця сторінка доступна лише для перевізників!');
+        window.location.href = '/login.html';
+    }
+
+    async function loadVehicles() {
+        const res = await fetch('/api/vehicles/my', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const vehicles = await res.json();
+
+        const tbody = document.getElementById('vehiclesTable');
+        tbody.innerHTML = vehicles.map(v => `
+                <tr>
+                    <td>${v.brand} ${v.model}</td>
+                    <td>${v.vehicle_type}</td>
+                    <td>${v.payload_tons} т.</td>
+                    <td><strong>${v.license_plate}</strong></td>
+                    <td><button class="btn-delete" onclick="deleteVehicle('${v.id}')">Видалити</button></td>
+                </tr>
+            `).join('');
+    }
+
+    document.getElementById('vehicleForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = {
+            brand: document.getElementById('brand').value,
+            model: document.getElementById('model').value,
+            vehicle_type: document.getElementById('type').value,
+            payload_tons: document.getElementById('payload').value,
+            license_plate: document.getElementById('license').value
+        };
+
+        const res = await fetch('/api/vehicles', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await res.json();
+        if (res.ok) {
+            e.target.reset();
+            loadVehicles();
+        } else {
+            alert(result.message);
+        }
+    });
+
+    async function deleteVehicle(id) {
+        if (!confirm('Видалити цей транспортний засіб?')) return;
+
+        const res = await fetch(`/api/vehicles/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) loadVehicles();
+    }
+
+    // Ініціалізація
+    loadVehicles();
+</script>
+</body>
+</html>
