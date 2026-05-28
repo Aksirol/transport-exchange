@@ -1,21 +1,19 @@
-// src/index.js
 require('dotenv').config();
 const express = require('express');
-const { Pool } = require('pg');
+const path = require('path');
+const pool = require('./db');
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// Налаштування пулу підключень до PostgreSQL
-const pool = new Pool({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-});
+// Роздача статичних файлів з папки public
+app.use(express.static(path.join(__dirname, '../public')));
+
+// Підключення маршрутів автентифікації
+app.use('/api/auth', authRoutes);
 
 // Тестовий маршрут
 app.get('/api/health', async (req, res) => {
@@ -32,6 +30,11 @@ app.get('/api/health', async (req, res) => {
     }
 });
 
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
-});
+// Експортуємо app для тестування. Запускаємо сервер, лише якщо файл викликано напряму
+if (require.main === module) {
+    app.listen(port, () => {
+        console.log(`Server is running on port ${port}`);
+    });
+}
+
+module.exports = app;

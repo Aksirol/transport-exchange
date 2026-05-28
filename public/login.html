@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Вхід - Транспортна біржа</title>
+    <style> body { font-family: sans-serif; padding: 20px; max-width: 400px; margin: auto; } input, button { display: block; width: 100%; margin-bottom: 15px; padding: 10px; } </style>
+</head>
+<body>
+<h2>Вхід</h2>
+<form id="loginForm">
+    <input type="email" id="email" placeholder="Email" required
+           title="Введіть коректну email адресу">
+    <input type="password" id="password" placeholder="Пароль" required
+           minlength="6"
+           title="Пароль має бути не коротшим за 6 символів">
+    <button type="submit">Увійти</button>
+</form>
+<p id="message"></p>
+<a href="/register.html">Ще не зареєстровані? Створити акаунт</a>
+
+<script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = {
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value
+        };
+
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            // Зберігаємо токен у localStorage (Завдання 6)
+            localStorage.setItem('token', result.token);
+            localStorage.setItem('userRole', result.role);
+            document.getElementById('message').innerText = 'Успішний вхід. Перенаправлення...';
+            document.getElementById('message').style.color = 'green';
+
+            // Перенаправлення на майбутню панель керування (можна буде додати пізніше)
+            // setTimeout(() => window.location.href = '/dashboard.html', 1000);
+        } else {
+            document.getElementById('message').innerText = result.message;
+            document.getElementById('message').style.color = 'red';
+        }
+    });
+</script>
+</body>
+</html>

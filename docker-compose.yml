@@ -16,6 +16,9 @@ services:
     depends_on:
       - postgres
     restart: unless-stopped
+    volumes:
+      - ./src:/app/src
+      - ./public:/app/public
 
   postgres:
     image: postgres:15-alpine

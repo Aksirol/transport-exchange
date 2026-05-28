@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Реєстрація - Транспортна біржа</title>
+    <style> body { font-family: sans-serif; padding: 20px; max-width: 400px; margin: auto; } input, select, button { display: block; width: 100%; margin-bottom: 15px; padding: 10px; } </style>
+</head>
+<body>
+<h2>Реєстрація</h2>
+<form id="registerForm">
+    <input type="text" id="name" placeholder="ПІБ або Назва компанії" required
+           minlength="3" maxlength="100"
+           title="Ім'я має містити щонайменше 3 символи">
+
+    <input type="email" id="email" placeholder="Email" required
+           title="Введіть коректну email адресу (наприклад, user@example.com)">
+
+    <input type="password" id="password" placeholder="Пароль (мін. 6 символів)" required
+           minlength="6"
+           title="Пароль має бути не коротшим за 6 символів">
+
+    <input type="tel" id="phone" placeholder="Телефон (+380XXXXXXXXX)"
+           pattern="^\+380\d{9}$"
+           title="Формат номеру: +380 та 9 цифр (наприклад, +380501234567)">
+
+    <select id="role" required>
+        <option value="customer">Замовник</option>
+        <option value="carrier">Перевізник</option>
+    </select>
+
+    <button type="submit">Зареєструватися</button>
+</form>
+<p id="message"></p>
+<a href="/login.html">Вже маєте акаунт? Увійти</a>
+
+<script>
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = {
+            name: document.getElementById('name').value,
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value,
+            phone: document.getElementById('phone').value,
+            role: document.getElementById('role').value
+        };
+
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        document.getElementById('message').innerText = result.message;
+        if (response.ok) {
+            setTimeout(() => window.location.href = '/login.html', 1500);
+        }
+    });
+</script>
+</body>
+</html>
